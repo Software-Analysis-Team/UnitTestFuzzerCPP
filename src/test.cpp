@@ -5,12 +5,14 @@
 std::string Value::print() const {
     return "static_cast<" + type.print() + ">(" + std::to_string(value) + ")";
 }
-
 std::string Type::print() const {
-    switch (kind) {
-        case Kind::PRIMITIVE_TYPE: return printPrimitiveType(primitiveType);
-        case Kind::POINTER: return pointerTo->print() + "*";
+    if (auto primitiveType = std::get_if<PrimitiveType>(&type)) {
+        return printPrimitiveType(*primitiveType);
+    } else if (auto pointerTo = std::get_if<PointerTo>(&type)) {
+        return pointerTo->type->print() + "*";
     }
+
+    return "<unknown>";
 }
 
 std::string printPrimitiveType(PrimitiveType type) {
@@ -18,12 +20,13 @@ std::string printPrimitiveType(PrimitiveType type) {
         case PrimitiveType::CHAR: return "char";
         case PrimitiveType::INT: return "int";
     }
+    return "<unknown>";
 }
 
 std::string Test::print() const {
     std::stringstream ss;
     ss << "TEST(" << signature.name << "Test, " << name << ") {\n";
-    ss << "    EXPECT_EQ(" << signature.name << "(";
+    ss << "    " << signature.name << "(";
 
     bool first = true;
 
@@ -36,7 +39,7 @@ std::string Test::print() const {
 
         first = false;
     }
-    ss << "), " << returnValue.print() << ");\n";
+    ss << ");\n";
     ss << "}\n";
     return ss.str();
 }

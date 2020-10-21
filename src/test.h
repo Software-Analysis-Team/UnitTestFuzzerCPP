@@ -2,14 +2,12 @@
 
 #include <vector>
 #include <string>
-#include <any>
+#include <variant>
 #include <optional>
 #include <memory>
+#include <random>
 
-enum class Kind {
-    PRIMITIVE_TYPE,
-    POINTER
-};
+struct Type;
 
 enum class PrimitiveType {
     CHAR,
@@ -18,18 +16,15 @@ enum class PrimitiveType {
 
 std::string printPrimitiveType(PrimitiveType type);
 
-struct Type {
-    union {
-        PrimitiveType primitiveType;
-        std::unique_ptr<Type> pointerTo;
-    };
+struct PointerTo {
+    std::shared_ptr<Type> type;
+};
 
-    Kind kind;
+struct Type {
+    std::variant<PrimitiveType, PointerTo> type;
 
     [[nodiscard]] std::string print() const;
 };
-
-std::any fillValue(Type x);
 
 struct TestSignature {
     std::string name;
@@ -40,7 +35,14 @@ struct TestSignature {
 struct Value {
     Type type;
     int value;
+
     [[nodiscard]] std::string print() const;
+
+    template <class Generator>
+    static Value generate(Generator& gen, const Type& type) {
+        std::uniform_int_distribution<int> distribution;
+        return Value { type, distribution(gen) };
+    }
 };
 
 struct Test
@@ -50,7 +52,20 @@ struct Test
     std::vector<Value> arguments;
 
     // after test launch
-    Value returnValue;
+    std::optional<Value> returnValue;
 
     [[nodiscard]] std::string print() const;
+
+    template <class Generator>
+    static Test generate(Generator gen, std::string name, TestSignature signature) {
+        Test test;
+        test.name = std::move(name);
+        test.signature = std::move(signature);
+
+        for (const auto &type : test.signature.parameterTypes) {
+            test.arguments.push_back(Value::generate(gen, type));
+        }
+
+        return test;
+    }
 };
