@@ -24,6 +24,7 @@ struct Type {
     std::variant<PrimitiveType, PointerTo> type;
 
     [[nodiscard]] std::string print() const;
+    [[nodiscard]] std::string printValue(const std::string &value) const;
 };
 
 struct TestSignature {

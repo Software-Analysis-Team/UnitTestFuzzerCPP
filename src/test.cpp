@@ -3,13 +3,24 @@
 #include <sstream>
 
 std::string Value::print() const {
-    return "static_cast<" + type.print() + ">(" + std::to_string(value) + ")";
+    return type.printValue(std::to_string(value));
 }
+
 std::string Type::print() const {
     if (auto primitiveType = std::get_if<PrimitiveType>(&type)) {
         return printPrimitiveType(*primitiveType);
     } else if (auto pointerTo = std::get_if<PointerTo>(&type)) {
         return pointerTo->type->print() + "*";
+    }
+
+    return "<unknown>";
+}
+
+std::string Type::printValue(const std::string& value) const {
+    if (auto primitiveType = std::get_if<PrimitiveType>(&type)) {
+        return "static_cast<" + print() + ">(" + value + ")";
+    } else if (auto pointerTo = std::get_if<PointerTo>(&type)) {
+        return "new " + pointerTo->type->print() + "{" + pointerTo->type->printValue(value) + "}";
     }
 
     return "<unknown>";
@@ -27,7 +38,7 @@ void Test::print(std::ostream &ss) const {
     ss << "TEST(" << signature.name << "Test, " << name << ") {\n";
     ss << "    ASSERT_EQ(";
     printFunctionCall(ss);
-    ss << ", " << resultMacroName() << ");\n";
+    ss << ", " << signature.returnType.printValue(resultMacroName()) << ");\n";
     ss << "}\n";
 }
 
