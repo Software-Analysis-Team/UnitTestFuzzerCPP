@@ -54,7 +54,10 @@ struct Test
     // after test launch
     std::optional<Value> returnValue;
 
-    [[nodiscard]] std::string print() const;
+    [[nodiscard]] std::string resultMacroName() const;
+    void print(std::ostream &) const;
+    void printPreludeGenerator(std::ostream &) const;
+    void printFunctionCall(std::ostream &) const;
 
     template <class Generator>
     static Test generate(Generator gen, std::string name, TestSignature signature) {

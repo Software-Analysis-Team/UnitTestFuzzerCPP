@@ -23,10 +23,30 @@ std::string printPrimitiveType(PrimitiveType type) {
     return "<unknown>";
 }
 
-std::string Test::print() const {
-    std::stringstream ss;
+void Test::print(std::ostream &ss) const {
     ss << "TEST(" << signature.name << "Test, " << name << ") {\n";
-    ss << "    " << signature.name << "(";
+    ss << "    ASSERT_EQ(";
+    printFunctionCall(ss);
+    ss << ", " << resultMacroName() << ");\n";
+    ss << "}\n";
+}
+
+std::string Test::resultMacroName() const {
+    return "FUZZ_TEST_" + name;
+}
+
+void Test::printPreludeGenerator(std::ostream &ss) const {
+    auto macro = resultMacroName();
+    auto var = macro + "_result";
+    ss << "auto " << var << " = ";
+    printFunctionCall(ss);
+    ss << ";\n";
+
+    ss << "std::cout << \"#define " << macro << " \" << " << var << " << \"\\n\"";
+}
+
+void Test::printFunctionCall(std::ostream &ss) const {
+    ss << signature.name << "(";
 
     bool first = true;
 
@@ -39,7 +59,6 @@ std::string Test::print() const {
 
         first = false;
     }
-    ss << ");\n";
-    ss << "}\n";
-    return ss.str();
+
+    ss << ")";
 }
