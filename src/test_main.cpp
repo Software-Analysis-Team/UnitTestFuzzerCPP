@@ -15,26 +15,24 @@ TestMain &TestMain::add(Test test) {
 }
 
 void TestMain::usage() {
-    std::cerr << "Usage: " << args[0] << " <-g|-t>";
+    std::cerr << "Usage: " << args[0] << std::endl;
     std::exit(1);
 }
 
 void TestMain::run() {
-    if (args.size() != 2) {
+    if (args.size() != 1) {
         usage();
     }
 
-    if (args[1] == "-g") {
-        for (const auto& test : tests) {
-            test.printPreludeGenerator(std::cout);
-        }
-    } else if (args[1] == "-t") {
-        for (const auto& test : tests) {
-            test.print(std::cout);
-        }
-    } else {
-        usage();
+    std::cout << "#include <iostream>\n";
+    for (const auto& test : tests) {
+        std::cout << test.signature.print();
     }
+    std::cout << "int main() {\n";
+    for (const auto& test : tests) {
+        std::cout << test.printGenerator();
+    }
+    std::cout << "}\n";
 }
 
 TestMain &TestMain::fuzz(const TestSignature& testSignature, int n) {

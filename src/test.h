@@ -50,6 +50,8 @@ struct TestSignature {
     std::string name;
     std::vector<Type::ptr> parameterTypes;
     Type::ptr returnType;
+
+    [[nodiscard]] std::string print() const;
 };
 
 struct Value {
@@ -75,10 +77,9 @@ struct Test
     // after test launch
     std::optional<Value> returnValue;
 
-    [[nodiscard]] std::string resultMacroName() const;
-    void print(std::ostream &) const;
-    void printPreludeGenerator(std::ostream &) const;
-    void printFunctionCall(std::ostream &) const;
+    [[nodiscard]] std::string print() const;
+    [[nodiscard]] std::string printGenerator() const;
+    [[nodiscard]] std::string printFunctionCall() const;
 
     template <class Generator>
     static Test generate(Generator &gen, std::string name, TestSignature signature) {

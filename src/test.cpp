@@ -45,44 +45,61 @@ std::pair<PrimitiveInteger, PrimitiveInteger> Type::getRange() const {
     return { 0, 0 };
 }
 
-void Test::print(std::ostream &ss) const {
+std::string quote(const std::string& s) {
+    std::stringstream ss;
+
+    ss << '"';
+    bool inEscape = false;
+
+    for (char c : s) {
+        if (c == '\n') ss << "\\n";
+        else if (c == '\t') ss << "\\t";
+        else if (c == '"') ss << "\\\"";
+        else if (c == '\0') {
+            inEscape = !inEscape;
+            if (inEscape) {
+                ss << "\" << ";
+            } else {
+                ss << " << \"";
+            }
+        } else ss << c;
+    }
+
+    ss << '"';
+
+    return ss.str();
+}
+
+std::string Test::print() const {
+    std::stringstream ss;
+    auto call = printFunctionCall();
     ss << "TEST(" << signature.name << "Test, " << name << ") {\n";
-    ss << "    ASSERT_EQ(";
-    printFunctionCall(ss);
-    ss << ", " << signature.returnType->printValue(resultMacroName()) << ");\n";
+    ss << "    ASSERT_EQ(" << call;
+    ss << ", " << signature.returnType->printValue('\0' + call + '\0') << ");\n";
     ss << "}\n";
+    return ss.str();
 }
 
-std::string Test::resultMacroName() const {
-    return "FUZZ_TEST_" + name;
+std::string Test::printGenerator() const {
+    return "std::cout << " + quote(print()) + ";\n";
 }
 
-void Test::printPreludeGenerator(std::ostream &ss) const {
-    auto macro = resultMacroName();
-    auto var = macro + "_result";
-    ss << "auto " << var << " = ";
-    printFunctionCall(ss);
-    ss << ";\n";
-
-    ss << "std::cout << \"#define " << macro << " \" << " << var << " << \"\\n\"\n";
-}
-
-void Test::printFunctionCall(std::ostream &ss) const {
-    ss << signature.name << "(";
+std::string Test::printFunctionCall() const {
+    std::string res;
+    res += signature.name + "(";
 
     bool first = true;
 
     for (const auto &arg : arguments) {
         if (!first) {
-            ss << ", ";
+            res += ", ";
         }
-
-        ss << arg.print();
-
+        res += arg.print();
         first = false;
     }
 
-    ss << ")";
+    res += ")";
+    return res;
 }
 
 std::string printPrimitiveType(PrimitiveType type) {
@@ -111,4 +128,22 @@ Type::ptr primitiveType(PrimitiveType type, PrimitiveInteger min, PrimitiveInteg
 
 Type::ptr pointerTo(Type::ptr type) {
     return std::make_shared<Type>(Type { PointerTo { std::move(type) } } );
+}
+
+std::string TestSignature::print() const {
+    std::string res = returnType->print() + " " + name;
+    res += "(";
+
+    bool first = true;
+
+    for (const auto &type : parameterTypes) {
+        if (!first) {
+            res += ", ";
+        }
+        first = false;
+        res += type->print();
+    }
+
+    res += ");\n";
+    return res;
 }
