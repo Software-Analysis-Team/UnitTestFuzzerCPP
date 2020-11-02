@@ -9,39 +9,58 @@
 
 struct Type;
 
+using PrimitiveInteger = long;
+
 enum class PrimitiveType {
     CHAR,
     INT
 };
 
-std::string printPrimitiveType(PrimitiveType type);
+[[nodiscard]] std::string printPrimitiveType(PrimitiveType type);
+[[nodiscard]] int primitiveTypeSize(PrimitiveType type);
 
 struct PointerTo {
     std::shared_ptr<Type> type;
 };
 
+struct InRange {
+    std::shared_ptr<Type> type;
+    PrimitiveInteger min, max;
+};
+
 struct Type {
-    std::variant<PrimitiveType, PointerTo> type;
+    std::variant<
+            PrimitiveType,
+            PointerTo,
+            InRange
+    > type;
+
+    using ptr = std::shared_ptr<Type>;
 
     [[nodiscard]] std::string print() const;
     [[nodiscard]] std::string printValue(const std::string &value) const;
+    [[nodiscard]] std::pair<PrimitiveInteger, PrimitiveInteger> getRange() const;
 };
+
+[[nodiscard]] Type::ptr primitiveType(PrimitiveType type);
+[[nodiscard]] Type::ptr primitiveType(PrimitiveType type, PrimitiveInteger min, PrimitiveInteger max);
+[[nodiscard]] Type::ptr pointerTo(Type::ptr type);
 
 struct TestSignature {
     std::string name;
-    std::vector<Type> parameterTypes;
-    Type returnType;
+    std::vector<Type::ptr> parameterTypes;
+    Type::ptr returnType;
 };
 
 struct Value {
-    Type type;
-    int value;
+    Type::ptr type;
+    PrimitiveInteger value;
 
     [[nodiscard]] std::string print() const;
 
     template <class Generator>
-    static Value generate(Generator& gen, const Type& type) {
-        std::uniform_int_distribution<int> distribution;
+    static Value generate(Generator& gen, const Type::ptr& type) {
+        std::uniform_int_distribution<PrimitiveInteger> distribution;
         return Value { type, distribution(gen) };
     }
 };
