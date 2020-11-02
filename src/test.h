@@ -60,7 +60,8 @@ struct Value {
 
     template <class Generator>
     static Value generate(Generator& gen, const Type::ptr& type) {
-        std::uniform_int_distribution<PrimitiveInteger> distribution;
+        auto [a, b] = type->getRange();
+        std::uniform_int_distribution<PrimitiveInteger> distribution{a, b};
         return Value { type, distribution(gen) };
     }
 };
@@ -80,7 +81,7 @@ struct Test
     void printFunctionCall(std::ostream &) const;
 
     template <class Generator>
-    static Test generate(Generator gen, std::string name, TestSignature signature) {
+    static Test generate(Generator &gen, std::string name, TestSignature signature) {
         Test test;
         test.name = std::move(name);
         test.signature = std::move(signature);

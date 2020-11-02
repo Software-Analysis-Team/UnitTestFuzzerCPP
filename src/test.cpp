@@ -64,7 +64,7 @@ void Test::printPreludeGenerator(std::ostream &ss) const {
     printFunctionCall(ss);
     ss << ";\n";
 
-    ss << "std::cout << \"#define " << macro << " \" << " << var << " << \"\\n\"";
+    ss << "std::cout << \"#define " << macro << " \" << " << var << " << \"\\n\"\n";
 }
 
 void Test::printFunctionCall(std::ostream &ss) const {
