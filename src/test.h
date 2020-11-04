@@ -94,3 +94,5 @@ struct Test
         return test;
     }
 };
+
+std::string quote(const std::string& s);

@@ -29,6 +29,7 @@ void TestMain::run() {
         std::cout << test.signature.print();
     }
     std::cout << "int main() {\n";
+    std::cout << "std::cout << " << quote("#include <gtest/gtest.h>\n") << ";\n";
     for (const auto& test : tests) {
         std::cout << test.printGenerator();
     }

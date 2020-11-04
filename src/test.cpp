@@ -73,6 +73,7 @@ std::string quote(const std::string& s) {
 std::string Test::print() const {
     std::stringstream ss;
     auto call = printFunctionCall();
+    ss << signature.print() << "\n";
     ss << "TEST(" << signature.name << "Test, " << name << ") {\n";
     ss << "    ASSERT_EQ(" << call;
     ss << ", " << signature.returnType->printValue('\0' + call + '\0') << ");\n";
