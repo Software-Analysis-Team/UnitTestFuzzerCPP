@@ -8,3 +8,22 @@ target_include_directories(fuzz PUBLIC src/)
 target_compile_features(fuzz PUBLIC cxx_std_17)
 
 add_subdirectory(examples)
+
+
+set(LLVM_LINK_COMPONENTS support)
+set(CMAKE_CXX_STANDARD 17)
+
+add_clang_executable(test-builder
+    TestBuilder.cpp
+    src/test.cpp
+    src/test_main.cpp
+  )
+  
+target_link_libraries(test-builder
+  PRIVATE
+  clangTooling
+  clangBasic
+  clangASTMatchers
+  )
+
+include_directories(src)
