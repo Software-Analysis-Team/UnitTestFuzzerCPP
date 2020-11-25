@@ -1,13 +1,12 @@
 #!/bin/bash
 
+set -e
+
 filename='test.cpp'
 output_path='google-test/gtest-printer.cpp'
 ninja_arguments='test-builder'
 
-if [ $(echo "$(ninja $ninja_arguments)" |  grep -q "error") ]
-then 
-	exit 1
-fi
+ninja $ninja_arguments
 
 mkdir -p google-test
 
