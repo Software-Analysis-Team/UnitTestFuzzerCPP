@@ -14,7 +14,10 @@ set(LLVM_LINK_COMPONENTS support)
 set(CMAKE_CXX_STANDARD 17)
 
 add_clang_executable(test-builder
-    TestBuilder.cpp
+    main.cpp
+    src/PrintMatcher.cpp
+    src/TestBuilder.cpp
+    src/StructParser.cpp
     src/test.cpp
     src/test_main.cpp
   )
