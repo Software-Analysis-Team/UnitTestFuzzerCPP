@@ -1,5 +1,6 @@
 #pragma once
 
+#include <utility>
 #include <vector>
 #include <string>
 #include <variant>
@@ -52,6 +53,7 @@ struct TestSignature {
     Type::ptr returnType;
 
     [[nodiscard]] std::string print() const;
+    [[nodiscard]] std::string printInteractor() const;
 };
 
 struct Value {
@@ -71,7 +73,7 @@ struct Value {
 struct Test
 {
     std::string name;
-    TestSignature signature;
+    TestSignature *signature;
     std::vector<Value> arguments;
 
     // after test launch
@@ -82,12 +84,12 @@ struct Test
     [[nodiscard]] std::string printFunctionCall() const;
 
     template <class Generator>
-    static Test generate(Generator &gen, std::string name, TestSignature signature) {
+    static Test generate(Generator &gen, std::string name, TestSignature *signature) {
         Test test;
         test.name = std::move(name);
-        test.signature = std::move(signature);
+        test.signature = signature;
 
-        for (const auto &type : test.signature.parameterTypes) {
+        for (const auto &type : test.signature->parameterTypes) {
             test.arguments.push_back(Value::generate(gen, type));
         }
 

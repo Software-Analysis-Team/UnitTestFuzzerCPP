@@ -10,6 +10,7 @@ TestMain::TestMain(int argc, char **argv) : gen { std::random_device{}() } {
 }
 
 TestMain &TestMain::add(Test test) {
+    signatures.insert(test.signature);
     tests.push_back(std::move(test));
     return *this;
 }
@@ -25,8 +26,8 @@ void TestMain::run() {
     }
 
     std::cout << "#include <iostream>\n";
-    for (const auto& test : tests) {
-        std::cout << test.signature.print();
+    for (auto signature : signatures) {
+        std::cout << signature->print();
     }
     std::cout << "int main() {\n";
     std::cout << "std::cout << " << quote("#include <gtest/gtest.h>\n") << ";\n";
@@ -36,7 +37,7 @@ void TestMain::run() {
     std::cout << "}\n";
 }
 
-TestMain &TestMain::fuzz(const TestSignature& testSignature, int n) {
+TestMain &TestMain::fuzz(TestSignature *testSignature, int n) {
     for (int i = 0; i < n; ++i) {
         add(Test::generate(gen, "test_" + std::to_string(i), testSignature));
     }

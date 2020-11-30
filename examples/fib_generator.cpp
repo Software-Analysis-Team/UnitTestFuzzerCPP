@@ -6,7 +6,7 @@ int main(int argc, char **argv) {
     TestSignature fib{ "fib", { n }, tInt };
 
     TestMain(argc, argv)
-        .fuzz(fib, 5)
+        .fuzz(&fib, 5)
         .run();
     return 0;
 }

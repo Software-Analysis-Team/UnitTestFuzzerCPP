@@ -112,27 +112,10 @@ public:
     }
 };
 
-std::vector<Test> tests;
 
-void construct_tests()
-{
-    std::random_device rd;
-
-    std::mt19937 generator(rd());
-
-
-    for(const auto &i: test_signatures)
-    {
-        tests.emplace_back(Test::generate(generator, i.name, i));
-    }   
-}
-
-
-[[nodiscard]] auto generate_tests_and_signatures(auto Tool)
+[[nodiscard]] std::vector<TestSignature> generate_test_signatures(auto Tool)
 {
     DeclarationMatcher Matcher = functionDecl().bind("FunctionDecl");
-
-    
 
     // FunctionArgsPrinter Printer;
     FunctionTestBuilder Builder;
@@ -142,9 +125,7 @@ void construct_tests()
 
     assert(! Tool.run(newFrontendActionFactory(&Finder).get()));
 
-    construct_tests();
-
-    return std::pair{test_signatures, tests};
+    return test_signatures;
 }
 
 } // namespace GenerateTest
@@ -160,25 +141,13 @@ int main(int argc, char **argv)
                    OptionsParser.getSourcePathList());
 
 
-    auto [s, t] = GenerateTest::generate_tests_and_signatures(Tool);
-
-    auto tst = t.at(0);
-    auto sign = s.at(0);
-
-    // std::cout << tst.print() << std::endl << std::endl;
+    auto signatures = GenerateTest::generate_test_signatures(Tool);
 
     TestMain test_main(1, argv);
 
-    test_main.fuzz(sign, 5).run();
-
-
-    // // test_main.add(tst);
-    // for(auto tst: t)
-    //     test_main.add(tst);
-
-    // test_main.run();
-
-    
+    for (auto sign : signatures) {
+        test_main.fuzz(std::make_shared<TestSignature>(sign), 5).run();
+    }
 
     return 0;
 }

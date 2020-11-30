@@ -7,7 +7,7 @@ list(APPEND CMAKE_MODULE_PATH
 include(AddLLVM)
 include(AddClang)
 
-add_library(fuzz src/test.cpp src/test.h src/test_main.h src/test_main.cpp)
+add_library(fuzz src/test.cpp src/test.h src/test_main.h src/test_main.cpp src/test_rt.h)
 add_library(fuzz::fuzz ALIAS fuzz)
 target_include_directories(fuzz PUBLIC src/)
 

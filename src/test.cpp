@@ -73,10 +73,10 @@ std::string quote(const std::string& s) {
 std::string Test::print() const {
     std::stringstream ss;
     auto call = printFunctionCall();
-    ss << signature.print() << "\n";
-    ss << "TEST(" << signature.name << "Test, " << name << ") {\n";
+    ss << signature->print() << "\n";
+    ss << "TEST(" << signature->name << "Test, " << name << ") {\n";
     ss << "    ASSERT_EQ(" << call;
-    ss << ", " << signature.returnType->printValue('\0' + call + '\0') << ");\n";
+    ss << ", " << signature->returnType->printValue('\0' + call + '\0') << ");\n";
     ss << "}\n";
     return ss.str();
 }
@@ -87,7 +87,7 @@ std::string Test::printGenerator() const {
 
 std::string Test::printFunctionCall() const {
     std::string res;
-    res += signature.name + "(";
+    res += signature->name + "(";
 
     bool first = true;
 
@@ -147,4 +147,8 @@ std::string TestSignature::print() const {
 
     res += ");\n";
     return res;
+}
+
+std::string TestSignature::printInteractor() const {
+
 }
