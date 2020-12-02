@@ -9,7 +9,7 @@
 
 Subprocess::Subprocess(std::vector<std::string> cmd) : cmd(std::move(cmd)), exitCode(0) {}
 
-Subprocess &Subprocess::run(std::string input) {
+Subprocess &Subprocess::run(const std::string& input) {
     exitCode = -1;
     capturedStdout.clear();
 

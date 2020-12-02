@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <utility>
+#include <unistd.h>
 
 std::string Value::print() const {
     return printValue(*type, value);
@@ -23,44 +24,14 @@ std::pair<PrimitiveInteger, PrimitiveInteger> Type::getRange() const {
     return { 0, 0 };
 }
 
-std::string quote(const std::string& s) {
-    std::stringstream ss;
-
-    ss << '"';
-    bool inEscape = false;
-
-    for (char c : s) {
-        if (c == '\n') ss << "\\n";
-        else if (c == '\t') ss << "\\t";
-        else if (c == '"') ss << "\\\"";
-        else if (c == '\0') {
-            inEscape = !inEscape;
-            if (inEscape) {
-                ss << "\" << ";
-            } else {
-                ss << " << \"";
-            }
-        } else ss << c;
-    }
-
-    ss << '"';
-
-    return ss.str();
-}
-
 std::string Test::print() const {
     std::stringstream ss;
     auto call = printFunctionCall();
-    ss << signature->print() << "\n";
     ss << "TEST(" << signature->name << "Test, " << name << ") {\n";
     ss << "    ASSERT_EQ(" << call;
-    ss << ", " << printValue(*signature->returnType, '\0' + call + '\0') << ");\n";
+    ss << ", " << signature->call(arguments).print() << ");\n";
     ss << "}\n";
     return ss.str();
-}
-
-std::string Test::printGenerator() const {
-    return "std::cout << " + quote(print()) + ";\n";
 }
 
 std::string Test::printFunctionCall() const {
@@ -136,7 +107,7 @@ std::string TestSignature::printInvoker() const {
     Test test;
     test.signature = this;
 
-    for (auto param : parameterTypes) {
+    for (const auto& param : parameterTypes) {
         std::string paramName = "arg" + std::to_string(i);
         res += "long " + paramName + "; std::cin >> " + paramName + ";\n";
         test.arguments.push_back(Value { param, paramName });
@@ -164,13 +135,57 @@ std::string TestSignature::getInvoker() const {
     return pathToInvoker = path;
 }
 
-std::string TestSignature::callSerialized(std::string args) const {
+std::string TestSignature::callSerialized(const std::string& args) const {
     std::string path = getInvoker();
     Subprocess prog{{path}};
 
-    if (!prog.run(std::move(args))) {
+    if (!prog.run(args)) {
         throw std::runtime_error("Failed to run invoker");
     }
 
     return prog.output();
 }
+
+Value TestSignature::call(const std::vector<Value>& args) const {
+    std::string serialized;
+    for (const auto &val : args) {
+        serialized += val.value;
+        serialized += '\n';
+    }
+
+    auto ret = callSerialized(serialized);
+    return Value { returnType, ret };
+}
+
+TestSignature::TestSignature(TestSignature &&that) noexcept {
+    swap(that);
+}
+
+TestSignature &TestSignature::operator=(TestSignature &&that) noexcept {
+    swap(that);
+    return *this;
+}
+
+void TestSignature::swap(TestSignature &that) noexcept {
+    std::swap(name, that.name);
+    std::swap(parameterTypes, that.parameterTypes);
+    std::swap(returnType, that.returnType);
+    std::swap(linkWith, that.linkWith);
+    std::swap(pathToInvoker, that.pathToInvoker);
+}
+
+TestSignature::~TestSignature() {
+    if (!pathToInvoker.empty()) {
+        unlink(pathToInvoker.c_str());
+    }
+}
+
+TestSignature::TestSignature(std::string name,
+                             std::vector<Type::ptr> parameterTypes,
+                             Type::ptr returnType,
+                             std::string linkWith) :
+     name(std::move(name)),
+     parameterTypes(std::move(parameterTypes)),
+     returnType(std::move(returnType)),
+     linkWith(std::move(linkWith))
+{}

@@ -60,20 +60,6 @@ std::string printValueSerializer(const Type &type, const std::string &value);
 [[nodiscard]] Type::ptr primitiveType(PrimitiveType type, PrimitiveInteger min, PrimitiveInteger max);
 [[nodiscard]] Type::ptr pointerTo(Type::ptr type);
 
-struct TestSignature {
-    std::string name;
-    std::vector<Type::ptr> parameterTypes;
-    Type::ptr returnType;
-    std::string linkWith;
-
-    mutable std::string pathToInvoker;
-
-    [[nodiscard]] std::string print() const;
-    [[nodiscard]] std::string printInvoker() const;
-    [[nodiscard]] std::string getInvoker() const;
-    [[nodiscard]] std::string callSerialized(std::string args) const;
-};
-
 struct Value {
     Type::ptr type;
     std::string value;
@@ -88,6 +74,32 @@ struct Value {
     }
 };
 
+struct TestSignature {
+    std::string name;
+    std::vector<Type::ptr> parameterTypes;
+    Type::ptr returnType;
+    std::string linkWith;
+
+    mutable std::string pathToInvoker;
+
+    [[nodiscard]] std::string print() const;
+    [[nodiscard]] std::string printInvoker() const;
+    [[nodiscard]] std::string getInvoker() const;
+    [[nodiscard]] std::string callSerialized(const std::string& args) const;
+    [[nodiscard]] Value call(const std::vector<Value>& args) const;
+
+    TestSignature() = default;
+    TestSignature(std::string name,
+                  std::vector<Type::ptr> parameterTypes,
+                  Type::ptr returnType,
+                  std::string linkWith);
+    TestSignature(TestSignature &&that) noexcept;
+    TestSignature &operator=(TestSignature &&that) noexcept;
+    ~TestSignature();
+    void swap(TestSignature &that) noexcept;
+};
+
+
 struct Test
 {
     std::string name;
@@ -98,7 +110,6 @@ struct Test
     std::optional<Value> returnValue;
 
     [[nodiscard]] std::string print() const;
-    [[nodiscard]] std::string printGenerator() const;
     [[nodiscard]] std::string printFunctionCall() const;
 
     template <class Generator>
@@ -114,5 +125,3 @@ struct Test
         return test;
     }
 };
-
-std::string quote(const std::string& s);

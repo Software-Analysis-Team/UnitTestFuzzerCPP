@@ -13,6 +13,6 @@ public:
     explicit Subprocess(std::vector<std::string> cmd);
     explicit operator bool() const;
 
-    Subprocess &run(std::string input);
+    Subprocess &run(const std::string &input);
     [[nodiscard]] std::string output() const;
 };

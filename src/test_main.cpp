@@ -25,16 +25,15 @@ void TestMain::run() {
         usage();
     }
 
-    std::cout << "#include <iostream>\n";
+    std::cout << "#include <gtest/gtest.h>\n";
+
     for (auto signature : signatures) {
         std::cout << signature->print();
     }
-    std::cout << "int main() {\n";
-    std::cout << "std::cout << " << quote("#include <gtest/gtest.h>\n") << ";\n";
+
     for (const auto& test : tests) {
-        std::cout << test.printGenerator();
+        std::cout << test.print();
     }
-    std::cout << "}\n";
 }
 
 TestMain &TestMain::fuzz(TestSignature *testSignature, int n) {
