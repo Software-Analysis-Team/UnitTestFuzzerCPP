@@ -38,10 +38,22 @@ struct Type {
 
     using ptr = std::shared_ptr<Type>;
 
-    [[nodiscard]] std::string print() const;
-    [[nodiscard]] std::string printValue(const std::string &value) const;
     [[nodiscard]] std::pair<PrimitiveInteger, PrimitiveInteger> getRange() const;
+
+    template<class Visitor>
+    void accept(Visitor &visitor) const {
+        if (auto primitiveType = std::get_if<PrimitiveType>(&type)) {
+            visitor.visitPrimitiveType(type);
+        } else if (auto pointerTo = std::get_if<PointerTo>(&type)) {
+            visitor.visitPointerTo(pointerTo);
+        } else if (auto inRange = std::get_if<InRange>(&type)) {
+            visitor.visitInRange(inRange);
+        }
+    }
 };
+
+std::string printType(const Type &type);
+std::string printValue(const Type &type, const std::string &value);
 
 [[nodiscard]] Type::ptr primitiveType(PrimitiveType type);
 [[nodiscard]] Type::ptr primitiveType(PrimitiveType type, PrimitiveInteger min, PrimitiveInteger max);
