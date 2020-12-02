@@ -44,3 +44,26 @@ std::string printValue(const Type &type, const std::string &value) {
     type.accept(valuePrinter);
     return valuePrinter.s;
 }
+
+struct ValueSerializer {
+    std::string value, s;
+
+    void visitPrimitiveType(PrimitiveType x) {
+        s = "std::cout << static_cast<" + printPrimitiveType(x) + ">(" + value + ");\n";
+    }
+
+    void visitPointerTo(const PointerTo& x) {
+        s = printValueSerializer(*x.type, value);
+    }
+
+    void visitInRange(const InRange& x) {
+        s = printValueSerializer(*x.type, value);
+    }
+};
+
+std::string printValueSerializer(const Type &type, const std::string &value) {
+    ValueSerializer valueSerializer;
+    valueSerializer.value = value;
+    type.accept(valueSerializer);
+    return valueSerializer.s;
+}

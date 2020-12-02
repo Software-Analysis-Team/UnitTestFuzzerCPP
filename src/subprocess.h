@@ -11,9 +11,7 @@ private:
 
 public:
     explicit Subprocess(std::vector<std::string> cmd);
-    explicit operator bool() const {
-        return exitCode == 0;
-    }
+    explicit operator bool() const;
 
     Subprocess &run(std::string input);
     [[nodiscard]] std::string output() const;

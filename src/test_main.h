@@ -9,7 +9,7 @@ class TestMain {
 private:
     std::vector<std::string> args;
     std::vector<Test> tests;
-    std::unordered_set<TestSignature*> signatures;
+    std::unordered_set<const TestSignature*> signatures;
     std::mt19937 gen;
 
 private:

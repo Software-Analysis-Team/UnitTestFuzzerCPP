@@ -43,17 +43,18 @@ struct Type {
     template<class Visitor>
     void accept(Visitor &visitor) const {
         if (auto primitiveType = std::get_if<PrimitiveType>(&type)) {
-            visitor.visitPrimitiveType(type);
+            visitor.visitPrimitiveType(*primitiveType);
         } else if (auto pointerTo = std::get_if<PointerTo>(&type)) {
-            visitor.visitPointerTo(pointerTo);
+            visitor.visitPointerTo(*pointerTo);
         } else if (auto inRange = std::get_if<InRange>(&type)) {
-            visitor.visitInRange(inRange);
+            visitor.visitInRange(*inRange);
         }
     }
 };
 
 std::string printType(const Type &type);
 std::string printValue(const Type &type, const std::string &value);
+std::string printValueSerializer(const Type &type, const std::string &value);
 
 [[nodiscard]] Type::ptr primitiveType(PrimitiveType type);
 [[nodiscard]] Type::ptr primitiveType(PrimitiveType type, PrimitiveInteger min, PrimitiveInteger max);
@@ -63,14 +64,19 @@ struct TestSignature {
     std::string name;
     std::vector<Type::ptr> parameterTypes;
     Type::ptr returnType;
+    std::string linkWith;
+
+    mutable std::string pathToInvoker;
 
     [[nodiscard]] std::string print() const;
-    [[nodiscard]] std::string printInteractor() const;
+    [[nodiscard]] std::string printInvoker() const;
+    [[nodiscard]] std::string getInvoker() const;
+    [[nodiscard]] std::string callSerialized(std::string args) const;
 };
 
 struct Value {
     Type::ptr type;
-    PrimitiveInteger value;
+    std::string value;
 
     [[nodiscard]] std::string print() const;
 
@@ -78,14 +84,14 @@ struct Value {
     static Value generate(Generator& gen, const Type::ptr& type) {
         auto [a, b] = type->getRange();
         std::uniform_int_distribution<PrimitiveInteger> distribution{a, b};
-        return Value { type, distribution(gen) };
+        return Value { type, std::to_string(distribution(gen)) };
     }
 };
 
 struct Test
 {
     std::string name;
-    TestSignature *signature;
+    const TestSignature *signature;
     std::vector<Value> arguments;
 
     // after test launch

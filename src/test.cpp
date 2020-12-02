@@ -1,9 +1,11 @@
 #include "test.h"
+#include "subprocess.h"
 
 #include <sstream>
+#include <utility>
 
 std::string Value::print() const {
-    return printValue(*type, std::to_string(value));
+    return printValue(*type, value);
 }
 
 std::pair<PrimitiveInteger, PrimitiveInteger> Type::getRange() const {
@@ -52,7 +54,7 @@ std::string Test::print() const {
     ss << signature->print() << "\n";
     ss << "TEST(" << signature->name << "Test, " << name << ") {\n";
     ss << "    ASSERT_EQ(" << call;
-    ss << ", " << signature->returnType->printValue('\0' + call + '\0') << ");\n";
+    ss << ", " << printValue(*signature->returnType, '\0' + call + '\0') << ");\n";
     ss << "}\n";
     return ss.str();
 }
@@ -125,6 +127,50 @@ std::string TestSignature::print() const {
     return res;
 }
 
-std::string TestSignature::printInteractor() const {
+std::string TestSignature::printInvoker() const {
+    std::string res = "#include<iostream>\n";
+    res += print();
+    res += "int main() {\n";
 
+    int i = 0;
+    Test test;
+    test.signature = this;
+
+    for (auto param : parameterTypes) {
+        std::string paramName = "arg" + std::to_string(i);
+        res += "long " + paramName + "; std::cin >> " + paramName + ";\n";
+        test.arguments.push_back(Value { param, paramName });
+    }
+
+    res += "auto retval = " + test.printFunctionCall() + ";\n";
+    res += printValueSerializer(*returnType, "retval");
+    res += "return 0;\n}\n";
+
+    return res;
+}
+
+std::string TestSignature::getInvoker() const {
+    if (!pathToInvoker.empty()) {
+        return pathToInvoker;
+    }
+
+    std::string path = "/tmp/UnitTestFuzzerInvoker_" + name;
+
+    Subprocess compiler{{"g++", "-std=c++17", "-o", path, linkWith, "-x", "c++", "-"}};
+    if (!compiler.run(printInvoker())) {
+        throw std::runtime_error("Failed to compile invoker");
+    }
+
+    return pathToInvoker = path;
+}
+
+std::string TestSignature::callSerialized(std::string args) const {
+    std::string path = getInvoker();
+    Subprocess prog{{path}};
+
+    if (!prog.run(std::move(args))) {
+        throw std::runtime_error("Failed to run invoker");
+    }
+
+    return prog.output();
 }
