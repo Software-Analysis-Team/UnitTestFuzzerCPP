@@ -1,10 +1,11 @@
 #include "test.h"
 #include "subprocess.h"
 
-#include <sstream>
 #include <utility>
 #include <unistd.h>
 #include <iostream>
+#include <limits>
+#include <sstream>
 
 std::string Value::print() const {
     return printValue(*type, value);
@@ -151,8 +152,9 @@ Value TestSignature::call(const std::vector<Value>& args) const {
     std::string serialized;
     for (const auto &val : args) {
         serialized += val.value;
-        serialized += '\n';
+        serialized += ' ';
     }
+    serialized += '\n';
 
     auto ret = callSerialized(serialized);
     return Value { returnType, ret };
@@ -253,8 +255,6 @@ std::string TestSignature::printFuzzer(int nTests, int interval) const {
     ss << "return 0;\n";
     ss << "}\n";
 
-    std::cerr << ss.str();
-
     return ss.str();
 }
 
@@ -266,8 +266,38 @@ std::string TestSignature::runFuzzer(int nTests) const {
         throw std::runtime_error("Failed to compile fuzzer");
     }
 
-    Subprocess fuzzer{{path}};
+    Subprocess fuzzer{{path, "-verbosity=0"}};
     auto res = fuzzer.run("").output();
     unlink(path.c_str());
+    return res;
+}
+
+[[nodiscard]] std::vector<Test> TestSignature::fuzz(int nTests) const {
+    std::stringstream ss(runFuzzer(nTests));
+    std::vector<Test> res;
+
+    int i = 0;
+
+    std::string cmd;
+    while (ss >> cmd) {
+        if (cmd == "exit") {
+            break;
+        }
+
+        if (cmd == "test") {
+            Test test;
+            test.signature = this;
+            test.name = "test_" + std::to_string(i++);
+            for (const auto& param : parameterTypes) {
+                Value value;
+                value.type = param;
+                ss >> value.value;
+                test.arguments.push_back(value);
+            }
+
+            res.push_back(test);
+        }
+    }
+
     return res;
 }

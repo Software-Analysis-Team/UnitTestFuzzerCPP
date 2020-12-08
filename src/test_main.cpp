@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 
-TestMain::TestMain(int argc, char **argv) : gen { std::random_device{}() } {
+TestMain::TestMain(int argc, char **argv) {
     for (int i = 0; i < argc; ++i) {
         args.emplace_back(argv[i]);
     }
@@ -25,12 +25,6 @@ void TestMain::run() {
         usage();
     }
 
-    for (auto signature : signatures) {
-        std::cout << signature->runFuzzer(10) << std::endl;
-    }
-
-    return;
-
     std::cout << "#include <gtest/gtest.h>\n";
 
     for (auto signature : signatures) {
@@ -43,8 +37,8 @@ void TestMain::run() {
 }
 
 TestMain &TestMain::fuzz(TestSignature *testSignature, int n) {
-    for (int i = 0; i < n; ++i) {
-        add(Test::generate(gen, "test_" + std::to_string(i), testSignature));
+    for (const auto &test : testSignature->fuzz(n)) {
+        add(test);
     }
 
     return *this;

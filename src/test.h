@@ -6,7 +6,6 @@
 #include <variant>
 #include <optional>
 #include <memory>
-#include <random>
 
 struct Type;
 
@@ -66,14 +65,20 @@ struct Value {
     std::string value;
 
     [[nodiscard]] std::string print() const;
-
-    template <class Generator>
-    static Value generate(Generator& gen, const Type::ptr& type) {
-        auto [a, b] = type->getRange();
-        std::uniform_int_distribution<PrimitiveInteger> distribution{a, b};
-        return Value { type, std::to_string(distribution(gen)) };
-    }
 };
+
+struct TestSignature;
+
+struct Test
+{
+    std::string name;
+    const TestSignature *signature;
+    std::vector<Value> arguments;
+
+    [[nodiscard]] std::string print() const;
+    [[nodiscard]] std::string printFunctionCall() const;
+};
+
 
 struct TestSignature {
     std::string name;
@@ -85,7 +90,7 @@ struct TestSignature {
     [[nodiscard]] std::string printStruct(const std::string &structName) const;
     [[nodiscard]] std::string callSerialized(const std::string& args) const;
     [[nodiscard]] Value call(const std::vector<Value>& args) const;
-    [[nodiscard]] std::string runFuzzer(int nTests) const;
+    [[nodiscard]] std::vector<Test> fuzz(int nTests) const;
 
     TestSignature() = default;
     TestSignature(std::string name,
@@ -103,31 +108,5 @@ private:
     [[nodiscard]] std::string getInvoker() const;
 
     [[nodiscard]] std::string printFuzzer(int nTests, int interval) const;
-};
-
-
-struct Test
-{
-    std::string name;
-    const TestSignature *signature;
-    std::vector<Value> arguments;
-
-    // after test launch
-    std::optional<Value> returnValue;
-
-    [[nodiscard]] std::string print() const;
-    [[nodiscard]] std::string printFunctionCall() const;
-
-    template <class Generator>
-    static Test generate(Generator &gen, std::string name, TestSignature *signature) {
-        Test test;
-        test.name = std::move(name);
-        test.signature = signature;
-
-        for (const auto &type : test.signature->parameterTypes) {
-            test.arguments.push_back(Value::generate(gen, type));
-        }
-
-        return test;
-    }
+    [[nodiscard]] std::string runFuzzer(int nTests) const;
 };
