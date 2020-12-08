@@ -25,6 +25,12 @@ void TestMain::run() {
         usage();
     }
 
+    for (auto signature : signatures) {
+        std::cout << signature->runFuzzer(10) << std::endl;
+    }
+
+    return;
+
     std::cout << "#include <gtest/gtest.h>\n";
 
     for (auto signature : signatures) {

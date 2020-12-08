@@ -11,6 +11,7 @@
 struct Type;
 
 using PrimitiveInteger = long;
+using PrimitiveIntegerU = unsigned long;
 
 enum class PrimitiveType {
     CHAR,
@@ -80,13 +81,11 @@ struct TestSignature {
     Type::ptr returnType;
     std::string linkWith;
 
-    mutable std::string pathToInvoker;
-
     [[nodiscard]] std::string print() const;
-    [[nodiscard]] std::string printInvoker() const;
-    [[nodiscard]] std::string getInvoker() const;
+    [[nodiscard]] std::string printStruct(const std::string &structName) const;
     [[nodiscard]] std::string callSerialized(const std::string& args) const;
     [[nodiscard]] Value call(const std::vector<Value>& args) const;
+    [[nodiscard]] std::string runFuzzer(int nTests) const;
 
     TestSignature() = default;
     TestSignature(std::string name,
@@ -97,6 +96,13 @@ struct TestSignature {
     TestSignature &operator=(TestSignature &&that) noexcept;
     ~TestSignature();
     void swap(TestSignature &that) noexcept;
+
+private:
+    mutable std::string pathToInvoker;
+    [[nodiscard]] std::string printInvoker() const;
+    [[nodiscard]] std::string getInvoker() const;
+
+    [[nodiscard]] std::string printFuzzer(int nTests, int interval) const;
 };
 
 

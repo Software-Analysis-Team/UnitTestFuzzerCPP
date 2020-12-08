@@ -4,6 +4,7 @@
 #include <sstream>
 #include <utility>
 #include <unistd.h>
+#include <iostream>
 
 std::string Value::print() const {
     return printValue(*type, value);
@@ -127,7 +128,7 @@ std::string TestSignature::getInvoker() const {
 
     std::string path = "/tmp/UnitTestFuzzerInvoker_" + name;
 
-    Subprocess compiler{{"g++", "-std=c++17", "-o", path, linkWith, "-x", "c++", "-"}};
+    Subprocess compiler{{"clang++", "-std=c++17", "-o", path, linkWith, "-x", "c++", "-"}};
     if (!compiler.run(printInvoker())) {
         throw std::runtime_error("Failed to compile invoker");
     }
@@ -189,3 +190,84 @@ TestSignature::TestSignature(std::string name,
      returnType(std::move(returnType)),
      linkWith(std::move(linkWith))
 {}
+
+std::string TestSignature::printStruct(const std::string &structName) const {
+    std::stringstream ss;
+
+    ss << "struct " << structName << " {\n";
+
+    int i = 0;
+    for (const auto& param : parameterTypes) {
+        std::string paramName = "arg" + std::to_string(i++);
+        ss << "long " << paramName << ";\n";
+    }
+
+    ss << "};\n";
+
+    return ss.str();
+}
+
+std::string TestSignature::printFuzzer(int nTests, int interval) const {
+    std::stringstream ss;
+
+    ss << "#include <cstring>\n";
+    ss << "#include <cstdlib>\n";
+    ss << "#include <iostream>\n";
+    ss << print();
+    ss << printStruct("FuzzArgs");
+    ss << "extern \"C\" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {\n";
+    ss << "static long cnt, tests;\n";
+    ss << "FuzzArgs args;\n";
+    ss << "if (size != sizeof(args)) return 0;\n";
+    ss << "memcpy(&args, data, size);\n";
+
+    int i = 0;
+    Test test;
+    test.signature = this;
+
+    for (const auto& param : parameterTypes) {
+        std::string paramName = "args.arg" + std::to_string(i);
+        test.arguments.push_back(Value { param, paramName });
+
+        auto [lo, hi] = param->getRange();
+        if (lo != std::numeric_limits<PrimitiveInteger>::min() || hi != std::numeric_limits<PrimitiveInteger>::max()) {
+            PrimitiveIntegerU domain = 1 + hi - lo;
+            ss << paramName << " = " << "(" << paramName << " % " << domain << " + " << domain << ") % ";
+            ss << domain << " + " << lo << ";\n";
+        }
+    }
+
+    ss << test.printFunctionCall() << ";\n";
+    ss << "if (++cnt % " << interval << " == 0) {\n";
+    i = 0;
+    for (const auto& param : parameterTypes) {
+        std::string paramName = "args.arg" + std::to_string(i);
+        ss << "std::cout << \"test \" << " << paramName << " << ' ';\n";
+    }
+    ss << "std::cout << std::endl;\n";
+    ss << "if (++tests >= " << nTests << ") {\n";
+    ss << "std::cout << \"exit\" << std::endl;\n";
+    ss << "exit(0);\n";
+    ss << "}\n";
+    ss << "}\n";
+    ss << "return 0;\n";
+    ss << "}\n";
+
+    std::cerr << ss.str();
+
+    return ss.str();
+}
+
+std::string TestSignature::runFuzzer(int nTests) const {
+    std::string path = "/tmp/UnitTestFuzzerFuzzer_" + name;
+
+    Subprocess compiler{{"clang++", "-g", "-fsanitize=address,fuzzer", "-std=c++17", "-o", path, linkWith, "-x", "c++", "-"}};
+    if (!compiler.run(printFuzzer(nTests, 100))) {
+        throw std::runtime_error("Failed to compile fuzzer");
+    }
+
+    Subprocess fuzzer{{path}};
+    auto res = fuzzer.run("").output();
+    unlink(path.c_str());
+    return res;
+}
